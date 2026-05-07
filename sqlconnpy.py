@@ -53,13 +53,67 @@ def delete_employee(database_path, employee_id):
 
 database_path = "sample-database.db"
 
-# employee_get = get_employee(database_path,113)
-# print(employee_get)
-#
-# employee_create = create_employee(database_path,207,"Ali","Valiyev","ali@gmail.com","+998931234567","08-08-2018", 5,1500,3,10)
-# print(employee_create)
+employee_get = get_employee(database_path,113)
+print(employee_get)
 
-# employee_update = update_employee(database_path, 100, "Jasur")
-# print(employee_update)
+employee_create = create_employee(database_path,207,"Ali","Valiyev","ali@gmail.com","+998931234567","08-08-2018", 5,1500,3,10)
+print(employee_create)
+
+employee_update = update_employee(database_path, 100, "Jasur")
+print(employee_update)
 
 employee_delete = delete_employee(database_path,100 )
+
+
+import sqlite3
+from abc import ABC, abstractmethod
+from contextlib import closing
+
+DATABASE_PATH = "sample-database.db"
+class BaseCRUD(ABC):
+    def __init__(self, database_path, country_name, country_id):
+        self.database_path = database_path
+        self.country_name = country_name
+        self.country_id = country_id
+
+
+    def get_connection(self):
+        return closing(sqlite3.connect(self.database_path))
+
+    def insert(self, **kwargs):
+        with self.get_connection() as connection:
+            cursor = connection.cursor()
+            columns = ', '.join(kwargs.keys())
+            placeholders = ', '.join('?' for _ in kwargs)
+            query = f"INSERT INTO {self.country_name} ({columns}) VALUES ({placeholders})"
+            cursor.execute(query, tuple(kwargs.values()))
+            connection.commit()
+            return cursor.lastrowid
+
+    def get(self, id, id_column="country_id"):
+        with self.get_connection() as connection:
+            cursor = connection.cursor()
+            query = f"SELECT * FROM countries WHERE {id_column}=?"
+            cursor.execute(query, (id,))
+            return cursor.fetchone()
+
+    def update(self, id, id_column="country_id", **kwargs):
+        with self.get_connection() as connection:
+            cursor = connection.cursor()
+            columns = ', '.join(f"{key}=?" for key in kwargs)
+            query = f"UPDATE {self.country_name} SET {columns} WHERE {id_column}=?"
+            cursor.execute(query, (*kwargs.values(), id))
+            connection.commit()
+
+    def delete(self, id, id_column="id"):
+        with self.get_connection() as connection:
+            cursor = connection.cursor()
+            query = f"DELETE FROM {self.country_name} WHERE {id_column}=?"
+            cursor.execute(query, (id,))
+            connection.commit()
+
+# country1 = BaseCRUD("sample-database.db", "Brazil", "BR")
+# print(country1.get("BR"))
+
+country1 = BaseCRUD("sample-database.db", "UZB", "UZ")
+print(country1.update(country1.country_id))
